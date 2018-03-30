@@ -1,0 +1,46 @@
+extends: airbnb
+parser: babel-eslint
+env:
+  browser: true
+  node: true
+
+rules:
+  semi:
+   - error
+   - never
+
+  arrow-parens:
+    - error
+    - as-needed
+
+  max-len:
+    - error
+    -
+      code: 80
+      ignoreTemplateLiterals: true
+      ignoreStrings: true
+      ignoreComments: true
+
+  jsx-a11y/anchor-is-valid:
+    - error
+    -
+      components:
+        - Link
+      specialLink:
+        - to
+
+  react/jsx-filename-extension:
+    - 1
+    - extensions:
+      - .js
+      - .jsx
+
+  import/prefer-default-export: 0
+  function-paren-newline: 0
+  no-return-assign: 0
+  no-unused-expressions: 0
+  no-mixed-operators: 0
+  quotes:
+    - error
+    - single
+    - allowTemplateLiterals: true

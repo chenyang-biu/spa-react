@@ -1,0 +1,19 @@
+@import '~antd/lib/style/v2-compatible-reset.less';
+@import '~antd/lib/button/style/mixin.less';
+
+
+body {
+  font-family: PingFang SC, PingFangSC-Regular, "Microsoft YaHei", "Helvetica Neue", Helvetica, "Hiragino Sans GB",
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color: @text-color;
+  cursor: default;
+}
+textarea,
+input {
+  outline: 0;
+  &:focus {
+    box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+  }
+}

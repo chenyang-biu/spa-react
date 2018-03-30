@@ -1,0 +1,29 @@
+{
+  "presets": [
+    [
+      "env",
+      {
+        "targets": {
+          "browsers": ["last 2 versions", "safari >= 7"]
+        },
+        "useBuiltIns": "entry",
+        "include": ["transform-es2015-spread"]
+      }
+    ],
+    "react",
+    "stage-2"
+  ],
+
+  "plugins": [
+    "react-hot-loader/babel",
+    [
+      "import",
+      {
+        "libraryName": "antd",
+        "style": true
+      }
+    ],
+    "transform-react-constant-elements",
+    "transform-decorators-legacy"
+  ]
+}
