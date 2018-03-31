@@ -6,6 +6,7 @@ import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 
 import { happypackPlugin, ifElse } from '../utils'
+import getLessLoaders from './getLessLoader'
 import config from '../config'
 
 // * webpack v4 已经做了 一大堆优化 代码压缩 分割(移除空的) chunk 重复包的查找 之类的
@@ -15,24 +16,32 @@ export default function webpackConfigFactory({
   target = 'client',
   mode = 'development',
 }) {
-  const isDev = mode === 'development'
+  const isDev = mode === 'development' && process.env.NODE_ENV === 'development'
+  const isClient = target === 'client'
   const isProd = !isDev
 
   const ifDev = ifElse(isDev)
-  const ifClient = ifElse(target === 'client')
-  const ifProd = ifElse(isProd)
+  const ifClient = ifElse(isClient)
+  const ifProdClient = ifElse(isClient && isProd)
+  const ifDevClient = ifElse(isClient && isDev)
+
+  const stylePath = pathResolve(config.bundles.client.appPath, 'styles')
 
   const webpackConfig = {
     mode,
     entry: {
-      index: [
+      index: compact([
         'babel-polyfill',
-        'react-hot-loader/patch',
-        `webpack-hot-middleware/client?path=http://localhost:${
-          config.port
-        }/__webpack_hmr`,
+
+        ifDevClient('react-hot-loader/patch'),
+        ifDevClient(
+          `webpack-hot-middleware/client?path=http://localhost:${
+            config.port
+          }/__webpack_hmr`,
+        ),
+
         config.bundles.client.entryPath,
-      ],
+      ]),
     },
     output: {
       path: config.bundles.client.outputPath,
@@ -52,58 +61,58 @@ export default function webpackConfigFactory({
             test: /\.css$/,
             include: config.bundles.client.appPath,
           },
-          ifDev(() => ({ use: 'happypack/loader?id=happypack-css' })),
-          ifProd(() => ({
+          ifDevClient(() => ({ use: 'happypack/loader?id=happypack-css' })),
+          ifProdClient(() => ({
             use: ExtractTextPlugin.extract({
               fallback: 'style-loader',
               use: [
                 {
                   loader: 'css-loader',
                   options: {
+                    sourceMap: true,
                     minimize: true,
                     localIdentName: '[path][name]__[local]--[hash:base64:5]',
                   },
                 },
-                'postcss-loader',
-              ],
-            }),
-          })),
-        ),
-
-        merge(
-          {
-            test: /\.less$/,
-            include: [
-              config.bundles.client.appPath,
-              pathResolve(__dirname, '../../node_modules/antd'),
-            ],
-          },
-
-          ifDev(() => ({ use: 'happypack/loader?id=happypack-less' })),
-          ifProd(() => ({
-            use: ExtractTextPlugin.extract({
-              fallback: 'style-loader',
-              use: [
                 {
-                  loader: 'css-loader',
-                  options: {
-                    minimize: true,
-                    sourceMap: false,
-                  },
-                },
-                'postcss-loader',
-                {
-                  loader: 'less-loader',
+                  loader: 'postcss-loader',
                   options: {
                     sourceMap: true,
-                    javascriptEnabled: true,
-                    modifyVars: config.bundles.client.appTheme,
                   },
                 },
               ],
             }),
           })),
         ),
+
+        ifClient(() => (
+          {
+            test: /\.less$/,
+            include: [config.bundles.client.appPath],
+            exclude: [stylePath, /node_modules/],
+            use: ifDev('happypack/loader?id=happypack-less',
+              ExtractTextPlugin.extract({
+                fallback: 'style-loader',
+                use: 'happypack/loader?id=happypack-less',
+              }),
+            ),
+          }
+        )),
+
+
+        ifClient(() => (
+          {
+            test: /\.less$/,
+            // ant-design 不能走 css-loader 的 module
+            include: [stylePath, /antd/],
+            use: ifDev('happypack/loader?id=happypack-less-antd',
+              ExtractTextPlugin.extract({
+                fallback: 'style-loader',
+                use: 'happypack/loader?id=happypack-less-antd',
+              }),
+            ),
+          }
+        )),
 
         {
           test: /\.svg(\?.*)?$/,
@@ -144,7 +153,43 @@ export default function webpackConfigFactory({
 
     plugins: compact([
       new webpack.EnvironmentPlugin({
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+        NODE_ENV: ifDev('development', 'production'),
+      }),
+
+      ifProdClient(
+        () =>
+          new ExtractTextPlugin({
+            // contenthash:4
+            // fixme: Path variable [contenthash] not implemented in this context:
+            filename: '[name].[id].css',
+            allChunks: true,
+          }),
+      ),
+
+      ifDev(() => new webpack.NoEmitOnErrorsPlugin()),
+      ifDevClient(
+        () =>
+          new webpack.HotModuleReplacementPlugin({
+            multiStep: true,
+          }),
+      ),
+
+      new AssetsPlugin({
+        filename: config.bundleAssetsFileName,
+        path: config.bundles.client.outputPath,
+      }),
+
+      new HtmlWebpackPlugin({
+        title: config.html.title,
+        template: 'src/template.html',
+        minify: {
+          collapseWhitespace: true,
+          html5: true,
+          minifyCSS: true,
+          removeComments: true,
+          removeEmptyAttributes: true,
+        },
+        hash: true,
       }),
 
       happypackPlugin({
@@ -152,77 +197,48 @@ export default function webpackConfigFactory({
         loaders: ['babel-loader', 'eslint-loader'],
       }),
 
-      happypackPlugin({
-        id: 'happypack-less',
-        loaders: [
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              modules: true,
-              sourceMap: true,
-              importLoaders: 1,
-            },
-          },
-          {
-            loader: 'less-loader',
-            options: {
-              sourceMap: true,
-              javascriptEnabled: true,
-              modifyVars: config.bundles.client.appTheme,
-            },
-          },
-        ],
-      }),
-
-      happypackPlugin({
-        id: 'happypack-css',
-        loaders: [
-          'postcss-loader',
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              modules: true,
-              sourceMap: true,
-            },
-          },
-        ],
-      }),
-
-      ifProd(
-        () =>
-          new ExtractTextPlugin({
-            // contenthash
-            filename: '[name].[id].css',
-            allChunks: true,
-          }),
+      ifClient(() =>
+        happypackPlugin({
+          id: 'happypack-less',
+          loaders: getLessLoaders({ cssModules: true, isProd }),
+        }),
       ),
 
-      ...ifDev(
-        () => [
-          new webpack.NoEmitOnErrorsPlugin(),
-          new webpack.HotModuleReplacementPlugin({
-            multiStep: true,
-          }),
-        ],
-        [],
+      ifClient(() =>
+        happypackPlugin({
+          id: 'happypack-less-antd',
+          loaders: getLessLoaders({ cssModules: false, isProd }),
+        }),
       ),
-      new AssetsPlugin({
-        filename: config.bundleAssetsFileName,
-        path: config.bundles.client.outputPath,
-      }),
-      new HtmlWebpackPlugin({
-        title: config.html.title,
-        template: 'src/template.html',
-      }),
+
+      ifDevClient(() =>
+        happypackPlugin({
+          id: 'happypack-css',
+          loaders: [
+            'style-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                modules: true,
+                sourceMap: true,
+              },
+            },
+            {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: true,
+              },
+            },
+          ],
+        }),
+      ),
     ]),
 
-    target: ifClient('web', 'node'),
+    target: isClient ? 'web' : 'node',
     performance: {
       hints: isDev ? false : 'warning',
     },
-    devtool: ifDev('source-map', 'hidden-source-map'),
+    devtool: ifDev('source-map', 'none'),
     externals: config.externals,
     resolve: {
       modules: [config.bundles.client.appPath, 'node_modules'],
