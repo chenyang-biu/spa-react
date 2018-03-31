@@ -6,8 +6,9 @@
         "targets": {
           "browsers": ["last 2 versions", "safari >= 7"]
         },
-        "useBuiltIns": "entry",
-        "include": ["transform-es2015-spread"]
+        "useBuiltIns": false,
+        "include": ["transform-es2015-spread"],
+        "debug": false
       }
     ],
     "react",

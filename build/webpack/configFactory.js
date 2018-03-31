@@ -31,7 +31,7 @@ export default function webpackConfigFactory({
     mode,
     entry: {
       index: compact([
-        'babel-polyfill',
+        // 'babel-polyfill', 太胖了 _(:з」∠)_
 
         ifDevClient('react-hot-loader/patch'),
         ifDevClient(
@@ -54,12 +54,14 @@ export default function webpackConfigFactory({
           test: /\.jsx?$/,
           use: 'happypack/loader?id=happypack-javascript',
           include: config.bundles.client.appPath,
+          exclude: [/node_modules/],
         },
 
         merge(
           {
             test: /\.css$/,
             include: config.bundles.client.appPath,
+            exclude: /node_modules/,
           },
           ifDevClient(() => ({ use: 'happypack/loader?id=happypack-css' })),
           ifProdClient(() => ({
@@ -85,38 +87,36 @@ export default function webpackConfigFactory({
           })),
         ),
 
-        ifClient(() => (
-          {
-            test: /\.less$/,
-            include: [config.bundles.client.appPath],
-            exclude: [stylePath, /node_modules/],
-            use: ifDev('happypack/loader?id=happypack-less',
-              ExtractTextPlugin.extract({
-                fallback: 'style-loader',
-                use: 'happypack/loader?id=happypack-less',
-              }),
-            ),
-          }
-        )),
+        ifClient(() => ({
+          test: /\.less$/,
+          include: [config.bundles.client.appPath],
+          exclude: [stylePath],
+          use: ifDev(
+            'happypack/loader?id=happypack-less',
+            ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: 'happypack/loader?id=happypack-less',
+            }),
+          ),
+        })),
 
-
-        ifClient(() => (
-          {
-            test: /\.less$/,
-            // ant-design 不能走 css-loader 的 module
-            include: [stylePath, /antd/],
-            use: ifDev('happypack/loader?id=happypack-less-antd',
-              ExtractTextPlugin.extract({
-                fallback: 'style-loader',
-                use: 'happypack/loader?id=happypack-less-antd',
-              }),
-            ),
-          }
-        )),
+        ifClient(() => ({
+          test: /\.less$/,
+          // ant-design 不能走 css-loader 的 module
+          include: [stylePath, /antd/],
+          use: ifDev(
+            'happypack/loader?id=happypack-less-antd',
+            ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: 'happypack/loader?id=happypack-less-antd',
+            }),
+          ),
+        })),
 
         {
           test: /\.svg(\?.*)?$/,
           include: config.bundles.client.appPath,
+          exclude: [/node_modules/],
           use: [
             {
               loader: 'url-loader',
@@ -194,7 +194,15 @@ export default function webpackConfigFactory({
 
       happypackPlugin({
         id: 'happypack-javascript',
-        loaders: ['babel-loader', 'eslint-loader'],
+        loaders: [
+          {
+            loader: 'babel-loader',
+            // options: {
+            //   presets: []
+            // },
+          },
+          'eslint-loader',
+        ],
       }),
 
       ifClient(() =>
@@ -238,11 +246,12 @@ export default function webpackConfigFactory({
     performance: {
       hints: isDev ? false : 'warning',
     },
-    devtool: ifDev('source-map', 'none'),
+    // 'hidden-source-map'
+    devtool: ifDev('source-map', false),
     externals: config.externals,
     resolve: {
       modules: [config.bundles.client.appPath, 'node_modules'],
-      extensions: ['.js', '.jsx', '.json', '.less'],
+      extensions: ['.js', '.jsx'],
     },
   }
 

@@ -1,4 +1,5 @@
 import { resolve as pathResolve } from 'path'
+
 const pathFactory = path => pathResolve(__dirname, '../../', path)
 
 const ENTRY_PATH = pathFactory('./src/main.js')
