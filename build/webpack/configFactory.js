@@ -6,6 +6,7 @@ import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 
 import { happypackPlugin, ifElse } from '../utils'
+import getLessLoaders from './getLessLoader'
 import config from '../config'
 
 // * webpack v4 已经做了 一大堆优化 代码压缩 分割(移除空的) chunk 重复包的查找 之类的
@@ -21,6 +22,7 @@ export default function webpackConfigFactory({
   const ifDev = ifElse(isDev)
   const ifClient = ifElse(target === 'client')
   const ifProd = ifElse(isProd)
+  const stylePath = pathResolve(config.bundles.client.appPath, 'styles')
 
   const webpackConfig = {
     mode,
@@ -70,40 +72,19 @@ export default function webpackConfigFactory({
           })),
         ),
 
-        merge(
-          {
-            test: /\.less$/,
-            include: [
-              config.bundles.client.appPath,
-              pathResolve(__dirname, '../../node_modules/antd'),
-            ],
-          },
+        {
+          test: /\.less$/,
+          include: [config.bundles.client.appPath],
+          exclude: [stylePath, /node_modules/],
+          use: 'happypack/loader?id=happypack-less',
+        },
 
-          ifDev(() => ({ use: 'happypack/loader?id=happypack-less' })),
-          ifProd(() => ({
-            use: ExtractTextPlugin.extract({
-              fallback: 'style-loader',
-              use: [
-                {
-                  loader: 'css-loader',
-                  options: {
-                    minimize: true,
-                    sourceMap: false,
-                  },
-                },
-                'postcss-loader',
-                {
-                  loader: 'less-loader',
-                  options: {
-                    sourceMap: true,
-                    javascriptEnabled: true,
-                    modifyVars: config.bundles.client.appTheme,
-                  },
-                },
-              ],
-            }),
-          })),
-        ),
+        {
+          test: /\.less$/,
+          // ant-design 不能走 css-loader 的 module
+          include: [stylePath, /antd/],
+          use: 'happypack/loader?id=happypack-less-antd',
+        },
 
         {
           test: /\.svg(\?.*)?$/,
@@ -154,25 +135,12 @@ export default function webpackConfigFactory({
 
       happypackPlugin({
         id: 'happypack-less',
-        loaders: [
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              modules: true,
-              sourceMap: true,
-              importLoaders: 1,
-            },
-          },
-          {
-            loader: 'less-loader',
-            options: {
-              sourceMap: true,
-              javascriptEnabled: true,
-              modifyVars: config.bundles.client.appTheme,
-            },
-          },
-        ],
+        loaders: getLessLoaders({ cssModules: true }),
+      }),
+
+      happypackPlugin({
+        id: 'happypack-less-antd',
+        loaders: getLessLoaders({ cssModules: false }),
       }),
 
       happypackPlugin({
@@ -193,8 +161,7 @@ export default function webpackConfigFactory({
       ifProd(
         () =>
           new ExtractTextPlugin({
-            // contenthash
-            filename: '[name].[id].css',
+            filename: '[name].[contenthash].css',
             allChunks: true,
           }),
       ),
@@ -215,6 +182,7 @@ export default function webpackConfigFactory({
       new HtmlWebpackPlugin({
         title: config.html.title,
         template: 'src/template.html',
+        minify: true,
       }),
     ]),
 

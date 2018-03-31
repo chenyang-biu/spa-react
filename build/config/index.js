@@ -25,6 +25,7 @@ export default {
       appTheme: APP_THEME,
     },
   },
+  host: process.env.HOST || 'localhost',
   port: process.env.PORT || 2333,
   html: {
     title: 'XXXXX',
