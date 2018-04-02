@@ -1,16 +1,12 @@
 import React from 'react'
+import { pick } from 'lodash/fp'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { Input, Button } from 'antd'
 import classes from './home.less'
 
-function mapStateToProps(state) {
-  return {
-    todo: state.todo,
-  }
-}
 
-@connect(mapStateToProps)
+@connect(pick(['todo']))
 export default class Home extends React.Component {
   static propTypes = {
     todo: PropTypes.shape({

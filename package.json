@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": " cross-env NODE_ENV=development babel-node build/development",
-    "build": "rm -rf dist && cross-env NODE_ENV=production && babel-node build/scripts/build",
+    "start": " cross-env NODE_ENV=development babel-node internal/development",
+    "build": "rm -rf dist && cross-env NODE_ENV=production && babel-node internal/scripts/build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "chenyang <cyupdev@gmail.com> (https://github.com/chenyang-biu)",
