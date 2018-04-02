@@ -3,8 +3,8 @@ import { pick } from 'lodash/fp'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { Input, Button } from 'antd'
+import { Link } from 'react-router-dom'
 import classes from './home.less'
-
 
 @connect(pick(['todo']))
 export default class Home extends React.Component {
@@ -54,6 +54,7 @@ export default class Home extends React.Component {
           {!!list.length &&
             list.map(todo => <li key={todo.id}>{todo.content}</li>)}
         </ul>
+        <Link to="/detail"> Detail</Link>
       </div>
     )
   }

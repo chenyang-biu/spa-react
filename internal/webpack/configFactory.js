@@ -37,9 +37,8 @@ export default function webpackConfigFactory({
         ifDevClient(
           `webpack-hot-middleware/client?path=http://localhost:${
             config.port
-          }/__webpack_hmr`,
+          }/__webpack_hmr&reload=true&overlay=false`,
         ),
-
         config.bundles.client.entryPath,
       ]),
     },
@@ -167,10 +166,11 @@ export default function webpackConfigFactory({
       ),
 
       ifDev(() => new webpack.NoEmitOnErrorsPlugin()),
+      ifDevClient(() => new webpack.NamedModulesPlugin()),
       ifDevClient(
         () =>
           new webpack.HotModuleReplacementPlugin({
-            multiStep: true,
+            multiStep: false,
           }),
       ),
 
@@ -179,18 +179,24 @@ export default function webpackConfigFactory({
         path: config.bundles.client.outputPath,
       }),
 
-      new HtmlWebpackPlugin({
-        title: config.html.title,
-        template: 'src/template.html',
-        minify: {
-          collapseWhitespace: true,
-          html5: true,
-          minifyCSS: true,
-          removeComments: true,
-          removeEmptyAttributes: true,
-        },
-        hash: true,
-      }),
+      ifClient(
+        () =>
+          new HtmlWebpackPlugin({
+            title: config.html.title,
+            template: pathResolve(
+              config.bundles.client.appPath,
+              'template.html',
+            ),
+            minify: {
+              collapseWhitespace: true,
+              html5: true,
+              minifyCSS: true,
+              removeComments: true,
+              removeEmptyAttributes: true,
+            },
+            hash: true,
+          }),
+      ),
 
       happypackPlugin({
         id: 'happypack-javascript',
@@ -256,12 +262,5 @@ export default function webpackConfigFactory({
     },
   }
 
-  if (isDev) {
-    webpackConfig.devServer = {
-      hot: true,
-      // hotOnly: true,
-      stats: 'errors-only',
-    }
-  }
   return webpackConfig
 }
