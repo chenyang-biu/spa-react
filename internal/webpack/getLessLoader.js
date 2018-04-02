@@ -9,6 +9,7 @@ export default function getLessLoaders({ cssModules = true, isProd }) {
           modules: cssModules,
           minimize: true,
           sourceMap: true,
+          localIdentName: '[name]__[local]--[hash:base64:5]',
         },
       },
       {
@@ -39,6 +40,7 @@ export default function getLessLoaders({ cssModules = true, isProd }) {
         modules: cssModules,
         sourceMap: true,
         importLoaders: 1,
+        localIdentName: '[name]__[local]--[hash:base64:5]',
       },
     },
     {

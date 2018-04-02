@@ -73,7 +73,7 @@ export default function webpackConfigFactory({
                   options: {
                     sourceMap: true,
                     minimize: true,
-                    localIdentName: '[path][name]__[local]--[hash:base64:5]',
+                    localIdentName: '[name]__[local]--[hash:base64:5]',
                   },
                 },
                 {
@@ -229,6 +229,7 @@ export default function webpackConfigFactory({
               options: {
                 modules: true,
                 sourceMap: true,
+                localIdentName: '[name]__[local]--[hash:base64:5]',
               },
             },
             {
